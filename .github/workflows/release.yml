@@ -32,29 +32,29 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install wixtoolset
 
-      - name: Gerar pacote .deb (Apenas Linux)
+      - name: Gerar pacote .deb (Linux)
         if: runner.os == 'Linux'
         run: |
           jpackage \
             --type deb \
             --name "Operação Retrolaser" \
             --linux-package-name "operacao-retrolaser" \
-            --input . \
+            --input out/artifacts/OperacaoRetrolaser_jar \
             --main-jar DeadOpsArcade.jar \
             --linux-shortcut \
-            --icon icon.png
+            --icon src/main/resources/files/icon.png
 
-      - name: Gerar pacote .exe (Apenas Windows)
+      - name: Gerar pacote .exe (Windows)
         if: runner.os == 'Windows'
         run: |
           jpackage `
             --type exe `
             --name "Operacao-Retrolaser" `
-            --input . `
+            --input out/artifacts/OperacaoRetrolaser_jar `
             --main-jar DeadOpsArcade.jar `
             --win-shortcut `
             --win-menu `
-            --icon icon.ico
+            --icon src/main/resources/files/icon.ico
 
       - name: Publicar na aba Releases do Repositório
         uses: softprops/action-gh-release@v2
