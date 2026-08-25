@@ -1,0 +1,22 @@
+# Arquivos de compilação e build
+target/
+build/
+.gradle/
+out/
+
+# Configurações do IntelliJ e IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Logs e variáveis de ambiente / segredos
+*.log
+.env
+.env.local
+application-local.properties
