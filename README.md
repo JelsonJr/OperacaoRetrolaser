@@ -20,3 +20,29 @@ O projeto foi construído do zero focando na manipulação direta de gráficos r
 * **Matrizes de Transformação:** Uso intensivo de `AffineTransform` para efeitos espaciais em menus e rotações em tempo real.
 * **Tipografia e Interface:** O HUD é renderizado por meio de uma fonte externa pixelada e `FontMetrics` para o alinhamento de textos flutuantes, indicadores de dano e menus.
 * **Gerenciamento de Estados:** Padrão arquitetural de máquina de estados controlando transições fluidas entre menus, tutorial, jogo e pausa.
+
+### Como Baixar e Instalar
+
+O jogo possui instaladores gerados automaticamente para **Windows** e **Linux (Debian/Ubuntu)**. Não é necessário instalar o Java separadamente, pois os pacotes já incluem tudo o que é necessário para rodar o jogo.
+
+#### Download
+Acesse a aba de **Releases** do repositório no GitHub e baixe os arquivos da versão mais recente (marcados com a tag `v*`).
+
+#### Windows
+1. Na aba de Releases, baixe o arquivo executável de instalação (`.exe`), com o nome semelhante a `Operacao-Retrolaser-*.exe`.
+2. Dê um duplo clique no arquivo `.exe` baixado.
+3. Siga os passos do instalador na tela.
+4. O jogo será instalado e atalhos serão criados automaticamente no Menu Iniciar e na Área de Trabalho do Windows.
+
+#### Linux (Ubuntu/Debian)
+1. Na aba de Releases, baixe o pacote Debian (`.deb`), com o nome semelhante a `operacao-retrolaser_*.deb`.
+2. Para instalar, você pode usar o gerenciador de pacotes da sua distribuição (geralmente dando um duplo clique no arquivo) ou abrir o terminal na pasta do download e executar:
+   ```bash
+   sudo apt install operacao-retrolaser_*.deb (recomendado)
+    ```
+   ou
+   ```bash
+   sudo dpkg -i operacao-retrolaser_*.deb
+   sudo apt-get install -f
+   ```
+3. Após a instalação, o jogo estará disponível no menu de aplicativos do seu sistema operacional e também por meio de atalhos gerados (/opt/operacao-retrolaser/bin/"Operação Retrolaser").
