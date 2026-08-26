@@ -15,8 +15,18 @@ public class SettingsState implements GameState {
     private int indexSelecionado = 0;
     private int draggingIndex = -1;
 
-    private final String[] opcoes = {"Volume Geral", "Musica", "Efeitos (SFX)", "Brilho"};
-    private final Rectangle btnVoltar = new Rectangle(300, 550, 150, 40);
+    private final String[] opcoes = {
+            "Volume Geral",
+            "Musica",
+            "Efeitos (SFX)",
+            "Brilho",
+            "Tela Cheia: ",
+            "Resolucao: ",
+            "Esticar Tela: ",
+            "APLICAR VIDEO"
+    };
+
+    private final Rectangle btnVoltar = new Rectangle(250, 620, 150, 40);
 
     public SettingsState(GamePanel game, GameState previousState) {
         this.game = game;
@@ -39,16 +49,28 @@ public class SettingsState implements GameState {
 
         for (int i = 0; i < opcoes.length; i++) {
             g2d.setColor((i == indexSelecionado) ? new Color(102, 252, 241) : Color.GRAY);
-            int y = 250 + (i * 60);
-            g2d.drawString(opcoes[i], 300, y);
+            int y = 200 + (i * 50);
 
-            g2d.drawRect(700, y - 20, 200, 20);
-
-            float valor = obterValorOpcao(i);
-            g2d.fillRect(700, y - 20, (int)(200 * valor), 20);
+            if (i < 4) {
+                // Desenha os Sliders para Áudio e Brilho
+                g2d.drawString(opcoes[i], 250, y);
+                g2d.drawRect(650, y - 20, 200, 20);
+                float valor = obterValorOpcao(i);
+                g2d.fillRect(650, y - 20, (int)(200 * valor), 20);
+            } else if (i == 4) {
+                g2d.drawString(opcoes[i] + (Settings.isFullScreen ? "SIM" : "NAO"), 250, y);
+            } else if (i == 5) {
+                int[] res = Settings.RESOLUTIONS[Settings.resolutionIndex];
+                g2d.drawString(opcoes[i] + res[0] + "x" + res[1], 250, y);
+            } else if (i == 6) {
+                g2d.drawString(opcoes[i] + (Settings.stretchScreen ? "SIM" : "NAO"), 250, y);
+            } else if (i == 7) {
+                g2d.setColor((i == indexSelecionado) ? Color.YELLOW : Color.GRAY);
+                g2d.drawString(opcoes[i], 250, y);
+            }
         }
 
-        g2d.setColor((indexSelecionado == 4) ? new Color(255, 50, 50) : Color.GRAY);
+        g2d.setColor((indexSelecionado == 8) ? new Color(255, 50, 50) : Color.GRAY);
         g2d.drawString("VOLTAR", btnVoltar.x, btnVoltar.y + 25);
     }
 
@@ -68,18 +90,24 @@ public class SettingsState implements GameState {
             case 0 -> {
                 Settings.masterVolume = pct;
                 SoundManager.updateBackgroundMusicVolume();
-                System.out.println("Volume Geral alterado para: " + pct);
             }
             case 1 -> {
                 Settings.musicVolume = pct;
                 SoundManager.updateBackgroundMusicVolume();
-                System.out.println("Volume Música alterado para: " + pct);
             }
-            case 2 -> {
-                Settings.sfxVolume = pct;
-                System.out.println("Volume SFX alterado para: " + pct);
-            }
+            case 2 -> Settings.sfxVolume = pct;
             case 3 -> Settings.brilho = 0.2f + (pct * 0.8f);
+        }
+    }
+
+    private void alterarOpcaoToggle(int dir) {
+        SoundManager.playSFX("clique");
+        if (indexSelecionado == 4) {
+            Settings.isFullScreen = !Settings.isFullScreen;
+        } else if (indexSelecionado == 5) {
+            Settings.resolutionIndex = (Settings.resolutionIndex + dir + Settings.RESOLUTIONS.length) % Settings.RESOLUTIONS.length;
+        } else if (indexSelecionado == 6) {
+            Settings.stretchScreen = !Settings.stretchScreen;
         }
     }
 
@@ -88,18 +116,27 @@ public class SettingsState implements GameState {
         Point p = e.getPoint();
 
         for (int i = 0; i < opcoes.length; i++) {
-            Rectangle sliderBounds = new Rectangle(700, 250 + (i * 60) - 20, 200, 20);
-            if (sliderBounds.contains(p)) {
-                draggingIndex = i;
+            Rectangle bound = new Rectangle(250, 200 + (i * 50) - 35, 600, 40);
+            if (bound.contains(p)) {
                 indexSelecionado = i;
-                float pct = (e.getX() - 700) / 200f;
-                definirValorOpcao(i, pct);
+                if (i < 4) {
+                    float pct = (e.getX() - 650) / 200f;
+                    definirValorOpcao(i, pct);
+                    draggingIndex = i;
+                } else if (i <= 6) {
+                    alterarOpcaoToggle(1);
+                } else if (i == 7) {
+                    SoundManager.playSFX("clique");
+                    Settings.salvar();
+                    game.applyVideoSettings();
+                }
                 return;
             }
         }
 
         if (btnVoltar.contains(p)) {
             SoundManager.playSFX("clique");
+            Settings.salvar();
             game.setState(previousState);
         }
     }
@@ -111,21 +148,19 @@ public class SettingsState implements GameState {
 
     @Override
     public void mouseMoved(MouseEvent e) {
-        // Se arrastando uma barra, atualiza o valor
         if (draggingIndex != -1) {
-            float pct = (e.getX() - 700) / 200f;
+            float pct = (e.getX() - 650) / 200f;
             definirValorOpcao(draggingIndex, pct);
         } else {
-            // Comportamento normal de apenas mover o mouse (Hover)
             Point p = e.getPoint();
             for (int i = 0; i < opcoes.length; i++) {
-                Rectangle sliderBounds = new Rectangle(700, 250 + (i * 60) - 20, 200, 20);
-                if (sliderBounds.contains(p)) {
+                Rectangle bound = new Rectangle(250, 200 + (i * 50) - 35, 600, 40);
+                if (bound.contains(p)) {
                     indexSelecionado = i;
                 }
             }
             if (btnVoltar.contains(p)) {
-                indexSelecionado = 4;
+                indexSelecionado = 8;
             }
         }
     }
@@ -133,23 +168,31 @@ public class SettingsState implements GameState {
     @Override
     public void keyPressed(KeyEvent e) {
         int code = e.getKeyCode();
-        if (code == KeyEvent.VK_UP) indexSelecionado = (indexSelecionado - 1 + 5) % 5;
-        if (code == KeyEvent.VK_DOWN) indexSelecionado = (indexSelecionado + 1) % 5;
+        if (code == KeyEvent.VK_UP) indexSelecionado = (indexSelecionado - 1 + 9) % 9;
+        if (code == KeyEvent.VK_DOWN) indexSelecionado = (indexSelecionado + 1) % 9;
 
-        float ajuste = 0.05f;
         if (code == KeyEvent.VK_LEFT || code == KeyEvent.VK_RIGHT) {
-            float dir = (code == KeyEvent.VK_RIGHT) ? ajuste : -ajuste;
+            int dir = (code == KeyEvent.VK_RIGHT) ? 1 : -1;
             if (indexSelecionado < 4) {
                 float atual = obterValorOpcao(indexSelecionado);
-                definirValorOpcao(indexSelecionado, atual + dir);
+                definirValorOpcao(indexSelecionado, atual + (dir * 0.05f));
+            } else if (indexSelecionado <= 6) {
+                alterarOpcaoToggle(dir);
             }
         }
 
-        if (code == KeyEvent.VK_ENTER && indexSelecionado == 4) {
-            game.setState(previousState);
+        if (code == KeyEvent.VK_ENTER) {
+            if (indexSelecionado >= 4 && indexSelecionado <= 6) {
+                alterarOpcaoToggle(1);
+            } else if (indexSelecionado == 7) {
+                SoundManager.playSFX("clique");
+                game.applyVideoSettings();
+            } else if (indexSelecionado == 8) {
+                SoundManager.playSFX("clique");
+                game.setState(previousState);
+            }
         }
     }
 
     @Override public void keyReleased(KeyEvent e) {}
-
 }

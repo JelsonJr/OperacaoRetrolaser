@@ -41,24 +41,23 @@ public class MenuState implements GameState {
         g2d.setColor(new Color(0, 0, 0, 200));
         g2d.fillRect(0, 0, GamePanel.WIDTH, GamePanel.HEIGHT);
 
-        AffineTransform oldTransform = g2d.getTransform();
-        AffineTransform starWarsTransform = new AffineTransform();
-        starWarsTransform.translate(GamePanel.WIDTH / 2.0, GamePanel.HEIGHT / 3.5);
-        starWarsTransform.scale(1.0, 0.5);
-        starWarsTransform.shear(-0.25, 0.0);
-
-        g2d.setTransform(starWarsTransform);
         g2d.setFont(game.getTitleFont());
-
         String title = "OPERAÇÃO RETROLASER";
         FontMetrics fm = g2d.getFontMetrics();
+
         int titleX = -fm.stringWidth(title) / 2;
 
-        g2d.setColor(Color.BLACK);
-        g2d.drawString(title, titleX + 8, 8);
+        AffineTransform oldTransform = g2d.getTransform();
 
-        g2d.setColor(new Color(255, 232, 31));
+        g2d.translate(GamePanel.WIDTH / 2.0, GamePanel.HEIGHT / 3.5);
+        g2d.scale(1.0, 0.5);
+        g2d.shear(-0.25, 0.0);
+        g2d.setColor(Color.BLACK);
+        g2d.drawString(title, titleX + 8, 8); // Sombra
+
+        g2d.setColor(new Color(255, 232, 31)); // Amarelo
         g2d.drawString(title, titleX, 0);
+
         g2d.setTransform(oldTransform);
 
         btnIniciar.draw(g2d, game.getPixelFont());

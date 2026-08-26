@@ -69,15 +69,16 @@ public class TutorialState implements GameState {
         drawInfoText(g2d, "MOUSE ESQUERDO", "Dispara o tiro principal da arma", startX, y += 28);
         drawInfoText(g2d, "MOUSE DIREITO", "Dispara o tiro secundário (quando liberado)", startX, y += 28);
         drawInfoText(g2d, "TECLAS 1 e 2", "Troca de arma (liberado pelo Perk Pistoleiro)", startX, y += 28);
-        drawInfoText(g2d, "TECLA G", "Cria um clone falso (liberado pelo Perk Replicante)", startX, y += 28);
+        drawInfoText(g2d, "TECLA E", "Cria um clone falso (liberado pelo Perk Replicante)", startX, y += 28);
         drawInfoText(g2d, "TECLA F", "Interagir com portas, máquinas de Perk e Upgrade", startX, y += 28);
+        drawInfoText(g2d, "ESPAÇO", "Aplica golpe Melee", startX, y += 28);
 
         int y2 = y + 45;
         drawSectionTitle(g2d, "UPGRADE STATION & MECÂNICAS", startX, y2);
 
         y2 += 35;
-        drawInfoText(g2d, "UPGRADE STATION", "Melhora armas de fogo (Nível 1: $5.000 | Nível 2: $10.000 | Nível 3: $15.000)", startX, y2);
-        drawInfoText(g2d, "TIRO SECUNDÁRIO", "Desbloqueado automaticamente a partir do Nível 2 na Upgrade Station", startX, y2 += 28);
+        drawInfoText(g2d, "UPGRADE STATION", "Melhora armas de fogo\n(Nível 1: $5.000 | Nível 2: $10.000 | Nível 3: $15.000)", startX, y2);
+        drawInfoText(g2d, "TIRO SECUNDÁRIO", "Desbloqueado automaticamente a partir do Nível 2 na Upgrade Station", startX, y2 += 40);
         drawInfoText(g2d, "PROGRESSÃO MELEE", "A cada round concluído, você ganha +3 de ataque Melee naturalmente", startX, y2 += 28);
         drawInfoText(g2d, "INTERVALO ROUND", "Entre cada round existe um tempo de descanso e preparo de 15 segundos", startX, y2 += 28);
     }
@@ -89,9 +90,9 @@ public class TutorialState implements GameState {
         drawSectionTitle(g2d, "PERKS & HABILIDADES (PARTE 1)", startX, startY);
 
         int y = startY + 40;
-        drawPerkBox(g2d, "CHANCE EXTRA", "Revive o jogador ao morrer em troca de todas as habilidades adquiridas. Também regenera a saúde mais rápido.", startX, y);
+        drawPerkBox(g2d, "CHANCE EXTRA", "Revive o jogador ao morrer em troca de todas as habilidades adquiridas.\nTambém regenera a saúde mais rápido.", startX, y);
         drawPerkBox(g2d, "TANQUE", "Aumenta a vida máxima do jogador, permitindo aguentar mais dano dos robôs.", startX, y += 80);
-        drawPerkBox(g2d, "PULMÃO DE ATLETA", "Consome menos stamina ao correr, permite correr mais rápido e regenera stamina mais rapidamente.", startX, y += 80);
+        drawPerkBox(g2d, "PULMÃO DE ATLETA", "Consome menos stamina ao correr, permite correr mais rápido\ne regenera stamina mais rapidamente.", startX, y += 80);
         drawPerkBox(g2d, "VISÃO DE ÁGUIA", "Remove completamente a Fog of War (névoa de guerra) do mapa.", startX, y += 80);
     }
 
@@ -103,9 +104,9 @@ public class TutorialState implements GameState {
 
         int y = startY + 40;
         drawPerkBox(g2d, "GOLPE DURO", "Aumenta significativamente a potência dos seus ataques corpo a corpo (Melee).", startX, y);
-        drawPerkBox(g2d, "PISTOLEIRO", "Permite carregar e utilizar duas armas de fogo simultaneamente (troque com as teclas 1 e 2).", startX, y += 80);
+        drawPerkBox(g2d, "PISTOLEIRO", "Permite carregar e utilizar duas armas de fogo simultaneamente\n(troque com as teclas 1 e 2).", startX, y += 80);
         drawPerkBox(g2d, "TIRO DUPLO", "Duplica todo o dano provocado por suas armas de fogo.", startX, y += 80);
-        drawPerkBox(g2d, "REPLICANTE", "1 vez por round, aperte G para criar um clone de si mesmo que atrai e distrai os robôs.", startX, y += 80);
+        drawPerkBox(g2d, "REPLICANTE", "1 vez por round, aperte [E] para criar um clone de si mesmo\nque atrai e distrai os robôs.", startX, y += 80);
     }
 
     private void drawSectionTitle(Graphics2D g2d, String text, int x, int y) {
@@ -121,7 +122,12 @@ public class TutorialState implements GameState {
 
         int keyWidth = g2d.getFontMetrics().stringWidth(key + ": ");
         g2d.setColor(Color.WHITE);
-        g2d.drawString(desc, x + keyWidth, y);
+
+        String[] linhas = desc.split("\n");
+
+        for (int i = 0; i < linhas.length; i++) {
+            g2d.drawString(linhas[i], x + keyWidth, y + (i * 18));
+        }
     }
 
     private void drawPerkBox(Graphics2D g2d, String nome, String desc, int x, int y) {
@@ -137,7 +143,12 @@ public class TutorialState implements GameState {
 
         g2d.setFont(game.getPixelFont().deriveFont(12f));
         g2d.setColor(Color.WHITE);
-        g2d.drawString(desc, x + 15, y + 50);
+
+        // Separa o texto por quebra de linha (\n)
+        String[] linhas = desc.split("\n");
+        for (int i = 0; i < linhas.length; i++) {
+            g2d.drawString(linhas[i], x + 15, y + 46 + (i * 15));
+        }
     }
 
     @Override

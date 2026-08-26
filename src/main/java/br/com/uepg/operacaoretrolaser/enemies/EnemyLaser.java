@@ -34,7 +34,7 @@ public class EnemyLaser {
             return;
         }
 
-        float MAX_DISTANCE = 15 * GameMap.TILE_SIZE;
+        float MAX_DISTANCE = 20 * GameMap.TILE_SIZE;
 
         if (distanceTraveled >= MAX_DISTANCE) {
             active = false;

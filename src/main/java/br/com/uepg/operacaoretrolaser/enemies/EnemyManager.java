@@ -12,20 +12,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class EnemyManager {
     private final List<Robot> activeRobots = new CopyOnWriteArrayList<>();
-    private final List<EnemyLaser> enemyLasers = new ArrayList<>();
+    private final List<EnemyLaser> enemyLasers = new CopyOnWriteArrayList<>();
     private final List<PendingSpawn> pendingSpawns = new ArrayList<>();
-    private final int MAX_ACTIVE = 75;
     private final List<Spawner> spawners = new ArrayList<>();
+    private final int MAX_ACTIVE = 40;
     private int currentRound;
     private int totalEnemiesThisRound;
     private int enemiesSpawnedThisRound;
     private int enemiesKilledThisRound;
 
     private int currentHpLimit;
-    private long currentCooldown;
     private double currentSprintChance;
     private long lastGlobalSpawnTime = 0;
-    private long currentSpawnInterval = 1000;
+    private long currentSpawnInterval = 1400;
 
     public void iniciarRound(int round) {
         this.currentRound = round;
@@ -34,12 +33,17 @@ public class EnemyManager {
         activeRobots.clear();
         enemyLasers.clear();
         pendingSpawns.clear();
-        totalEnemiesThisRound = 15 + ((round - 1) * round >= 15 ? 10 : 5);
 
-        currentHpLimit = Math.min(900, 20 + 20 * (round - 1));
-        currentCooldown = Math.max(2000, 10000 - 800L * (round - 1));
-        currentSprintChance = Math.min(0.7, 0.10 + 0.05 * (round - 1));
+        if (round < 15) {
+            totalEnemiesThisRound = 13 + (round * 7); // Adiciona 7 por round
+        } else {
+            totalEnemiesThisRound = 15 + (14 * 5) + ((round - 14) * 12); // Adiciona 12 por round
+        }
 
+        int hpMultiplier = (round >= 30) ? 50 : ((round >= 15) ? 35 : 20);
+
+        currentHpLimit = Math.min(1000, 20 + (hpMultiplier * (round - 1)));
+        currentSprintChance = Math.min(0.12, 0.02 + 0.01 * (round - 1));
         calcularProximoIntervalo();
     }
 
@@ -79,7 +83,7 @@ public class EnemyManager {
 
         for (int i = 0; i < activeRobots.size(); i++) {
             Robot r = activeRobots.get(i);
-            r.update(map, player, pclone, chanceExtra, flowField);
+            r.update(map, player, pclone, chanceExtra, flowField, activeRobots);
 
             if (r.isMorto()) {
                 activeRobots.remove(i);
@@ -90,9 +94,9 @@ public class EnemyManager {
     }
 
     private void calcularProximoIntervalo() {
-        // Base de tempo que diminui conforme o round avança, mas com variação aleatória de 0 a 300ms
+        // Base de tempo que diminui conforme o round avança, mas com variação aleatória de 0 a 400ms
         long base = Math.max(400, (currentRound >= 10 ? 650 : 900) - (currentRound * 15L));
-        currentSpawnInterval = base + (long)(Math.random() * 300);
+        currentSpawnInterval = base + (long)(Math.random() * 400);
     }
 
     private void processPendingSpawns(GameMap map) {
@@ -104,11 +108,16 @@ public class EnemyManager {
             if (now >= pending.releaseTime) {
                 Point2D.Float safePos = findSafeSpawnPosition(map, pending.spawner.x, pending.spawner.y, pending.size);
 
+                // Calcula a chance de ter o ataque mais rápido (escala até 60%)
+                double fastAttackChance = Math.min(0.60, 0.10 + (currentRound * 0.02));
+                long robotCooldown = (Math.random() < fastAttackChance) ? 700L : 1250L;
+
                 Robot novoRobo;
+
                 if (pending.isRanged) {
-                    novoRobo = new RangedRobot(safePos.x, safePos.y, pending.size, (int) (currentHpLimit / 1.30f), false, currentCooldown + 1000, this);
+                    novoRobo = new RangedRobot(safePos.x, safePos.y, pending.size, (int) (currentHpLimit / 1.2f), false, robotCooldown + 1000, this);
                 } else {
-                    novoRobo = new MeleeRobot(safePos.x, safePos.y, pending.size, pending.hp, pending.isSprinter, currentCooldown);
+                    novoRobo = new MeleeRobot(safePos.x, safePos.y, pending.size, pending.hp, pending.isSprinter, robotCooldown);
                 }
 
                 activeRobots.add(novoRobo);
@@ -155,16 +164,15 @@ public class EnemyManager {
 
             float dist = (float) Math.hypot(s.x - px, s.y - py);
 
-            // Aumentada a distância mínima para 180 (evita que nasçam muito na cara)
-            if (dist < 180) continue;
+            if (dist < 100) continue;
 
             double score = 100.0;
 
-            // Zona ideal deslocada um pouco mais para longe (250 a 600)
-            if (dist >= 250 && dist <= 600) {
+            // Zona ideal deslocada um pouco mais para longe (180 a 400)
+            if (dist >= 180 && dist <= 400) {
                 score *= 3.5;
             } else if (dist > 800) {
-                score *= 0.4;
+                score *= 0.5;
             }
 
             double spawnerAngle = Math.atan2(s.y - py, s.x - px);
@@ -218,12 +226,12 @@ public class EnemyManager {
                 int limiteMaximo = Math.min(MAX_ACTIVE, totalEnemiesThisRound);
                 int limiteRanged = (int) Math.max(1, limiteMaximo * 0.20);
 
-                if (rangedCount < limiteRanged && Math.random() <= 0.25) {
+                if (rangedCount < limiteRanged && Math.random() <= 0.35) {
                     isRanged = true;
                 }
             }
 
-            long releaseDelay = 250L + (i * 250L); // Aumentado o intervalo de saída para 250ms
+            long releaseDelay = 250L + i * 300L;
             pendingSpawns.add(new PendingSpawn(chosen, now + releaseDelay, size, hp, isSprinter, isRanged));
             enemiesSpawnedThisRound++;
         }

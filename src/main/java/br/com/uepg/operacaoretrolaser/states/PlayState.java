@@ -19,6 +19,7 @@ import br.com.uepg.operacaoretrolaser.weapons.Projectile;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
@@ -45,7 +46,7 @@ public class PlayState implements GameState {
     private boolean intervaloRound = false;
     private int ticksIntervalo = 0;
     private PlayerClone cloneAtivo = null;
-    private boolean cloneAtivoNesseRound = false;
+    private short cloneAtivoNesseRound = 0;
     private long chanceExtraFimMs = 0;
     private int pontosTotais = 500;
     private int pontosGastos = 0;
@@ -90,9 +91,11 @@ public class PlayState implements GameState {
     }
 
     public void tentarAtivarReplicante() {
-        if (player.hasPerk(PerkType.REPLICANTE) && !cloneAtivoNesseRound && (cloneAtivo == null || !cloneAtivo.isAlive())) {
+        short MAX_CLONES_POR_ROUND = 2;
+
+        if (player.hasPerk(PerkType.REPLICANTE) && cloneAtivoNesseRound < MAX_CLONES_POR_ROUND && (cloneAtivo == null || !cloneAtivo.isAlive())) {
             cloneAtivo = new PlayerClone(player.getX(), player.getY());
-            cloneAtivoNesseRound = true;
+            cloneAtivoNesseRound++;
         }
     }
 
@@ -148,7 +151,7 @@ public class PlayState implements GameState {
                 enemyManager.iniciarRound(this.round);
                 player.addExtraMeleeDamage(3);
                 intervaloRound = false;
-                cloneAtivoNesseRound = false;
+                cloneAtivoNesseRound = 0;
             }
         }
 
@@ -652,6 +655,12 @@ public class PlayState implements GameState {
         g2d.translate(camera.getX(), camera.getY());
     }
 
+    public void mouseWheelMoved(MouseWheelEvent e) {
+        if (!morrendo) {
+            player.alternarArmaScroll(e.getWheelRotation());
+        }
+    }
+
     public boolean hasLineOfSight(float px, float py, float alvoX, float alvoY) {
         float dist = (float) Math.hypot(alvoX - px, alvoY - py);
         if (dist > 350) return false;
@@ -699,7 +708,7 @@ public class PlayState implements GameState {
             game.setState(game.getPauseState());
         }
 
-        if (e.getKeyCode() == KeyEvent.VK_G && !morrendo) {
+        if (e.getKeyCode() == KeyEvent.VK_E && !morrendo) {
             tentarAtivarReplicante();
         }
 

@@ -22,11 +22,20 @@ public class MeleeRobot extends Robot {
 
     @Override
     protected void executarAtaque(Player p) {
-        p.tomarDano(1);
         tempoUltimoAtaqueVisual = System.currentTimeMillis();
 
         if (isSprinter) {
-            this.hp = 0; // O kamikaze é destruído ao se chocar
+            // Kamikaze: Causa dano garantido e se destrói no processo
+            p.tomarDano(1);
+            this.hp = 0;
+            return;
+        }
+
+        // Robô Padrão: 15% de chance de errar o golpe (0.15)
+        double chanceDeEsquiva = attackCooldown >= 1000L ? 0.15 : 0.2;
+
+        if (Math.random() > chanceDeEsquiva) {
+            p.tomarDano(1);
         }
     }
 

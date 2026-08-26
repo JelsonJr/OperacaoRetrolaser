@@ -84,46 +84,52 @@ public class GameMap {
                     } else if (c == '@') {
                         matrizMapa[y][x] = 0; // Chão (Spawn Inimigo)
                         spawnPoints.add(new Point(x, y));
-                    } else if (c >= 'A' && c <= 'L') {
+                    } else if (c >= 'A' && c <= 'M') {
                         matrizMapa[y][x] = 1; // Arma na parede funciona como colisão
                         Weapon armaParede = null;
                         int custo = 500;
+
                         switch (c) {
                             case 'A' -> {
                                 armaParede = WeaponFactory.criarSubmetralhadora();
-                                custo = 750;
+                                custo = 900;
                             }
                             case 'B' -> {
                                 armaParede = WeaponFactory.criarRifleAssalto();
-                                custo = 1250;
+                                custo = 1750;
                             }
                             case 'C' -> {
                                 armaParede = WeaponFactory.criarEscopeta();
-                                custo = 1500;
+                                custo = 1250;
                             }
                             case 'E' -> {
                                 armaParede = WeaponFactory.criarSniper();
-                                custo = 2000;
+                                custo = 1700;
                             }
                             case 'F' -> {
                                 armaParede = WeaponFactory.criarMetralhadoraPesada();
-                                custo = 2500;
+                                custo = 3200;
                             }
                             case 'G' -> {
                                 armaParede = WeaponFactory.criarPlasma();
-                                custo = 3000;
+                                custo = 3200;
                             }
                             case 'J' -> {
                                 armaParede = WeaponFactory.criarRevolver();
-                                custo = 2200;
+                                custo = 1500;
                             }
                             case 'K' -> {
                                 armaParede = WeaponFactory.criarEscopetaK();
-                                custo = 2500;
+                                custo = 2000;
                             }
                             case 'L' -> {
                                 armaParede = WeaponFactory.criarRifleGaussL();
-                                custo = 1750;
+                                custo = 1250;
+                            }
+
+                            case 'M' -> {
+                                armaParede = WeaponFactory.criarMetralhadoraDeCombate();
+                                custo = 1500;
                             }
                         }
                         interactables.add(new WallWeapon(x * TILE_SIZE, y * TILE_SIZE, armaParede, custo));

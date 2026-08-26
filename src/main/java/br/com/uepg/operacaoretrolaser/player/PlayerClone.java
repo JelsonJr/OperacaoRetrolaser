@@ -3,7 +3,7 @@ import java.awt.*;
 
 public class PlayerClone {
     private final float x, y;
-    private int vida = 4;
+    private int vida = 6;
 
     public PlayerClone(float x, float y) {
         this.x = x;

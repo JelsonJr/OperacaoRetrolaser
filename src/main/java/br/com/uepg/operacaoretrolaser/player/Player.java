@@ -19,12 +19,12 @@ public class Player {
     private final boolean[] keys = new boolean[256];
     private final List<Weapon> inventarioArmas = new ArrayList<>();
     private final MeleeWeapon ataqueCorpoACorpo;
-    private final long INVINCIBILITY_TIME = 1000;
+    private final long INVINCIBILITY_TIME = 900;
     private final List<PerkType> perksAtivos = new ArrayList<>();
-    private float baseSpeed = 4.5f;
+    private float baseSpeed = 4f;
     private float x, y;
     private double angle = 0;
-    private float sprintSpeed = 6.5f;
+    private float sprintSpeed = 6f;
     private float currentSpeed = baseSpeed;
     private float maxStamina = 150f;
     private float stamina = 150f;
@@ -236,7 +236,7 @@ public class Player {
 
         if (isTryingToSprint && isMoving && !exhausted) {
             currentSpeed = sprintSpeed;
-            stamina -= hasPulmaoDeAtleta ? 0.4f : 1.0f;
+            stamina -= hasPulmaoDeAtleta ? 0.5f : 1.0f;
             if (stamina <= 0) {
                 stamina = 0;
                 exhausted = true;
@@ -244,7 +244,7 @@ public class Player {
         } else {
             currentSpeed = baseSpeed;
             if (stamina < maxStamina) {
-                stamina += hasPulmaoDeAtleta ? 0.65f : 0.35f;
+                stamina += hasPulmaoDeAtleta ? 0.55f : 0.35f;
                 if (stamina > maxStamina) stamina = maxStamina;
             }
             float minExausted = hasPulmaoDeAtleta ? 20f : 30f;
@@ -267,11 +267,11 @@ public class Player {
             long currentTime = System.currentTimeMillis();
             var hasChanceExtra = hasPerk(PerkType.CHANCE_EXTRA);
 
-            long REGEN_DELAY = 4400;
-            long REGEN_TICK = 1000;
+            long REGEN_DELAY = 4000;
+            long REGEN_TICK = 850;
 
-            long realRengeDelay = hasChanceExtra ? REGEN_DELAY / 2 : REGEN_DELAY;
-            long realRengeTick = hasChanceExtra ? REGEN_TICK / 2 : REGEN_TICK;
+            long realRengeDelay = hasChanceExtra ? (long) (REGEN_DELAY / 1.85) : REGEN_DELAY;
+            long realRengeTick = hasChanceExtra ? (long) (REGEN_TICK / 1.7) : REGEN_TICK;
 
             if (currentTime - lastDamageTime >= realRengeDelay) {
                 if (currentTime - lastRegenTime >= realRengeTick) {
@@ -423,7 +423,7 @@ public class Player {
         int code = e.getKeyCode();
         if (code < keys.length) keys[code] = true;
 
-        if (e.getKeyCode() == KeyEvent.VK_C) {
+        if (e.getKeyCode() == KeyEvent.VK_SPACE) {
             if (ataqueCorpoACorpo.podeAtacar()) {
                 ataqueCorpoACorpo.registrarAtaque();
                 realizandoMelee = true;
@@ -439,6 +439,16 @@ public class Player {
     public void keyReleased(KeyEvent e) {
         int code = e.getKeyCode();
         if (code < keys.length) keys[code] = false;
+    }
+
+    public void alternarArmaScroll(int direcao) {
+        if (inventarioArmas.size() > 1) {
+            if (direcao > 0) {
+                indiceArmaAtual = (indiceArmaAtual + 1) % inventarioArmas.size();
+            } else if (direcao < 0) {
+                indiceArmaAtual = (indiceArmaAtual - 1 + inventarioArmas.size()) % inventarioArmas.size();
+            }
+        }
     }
 
     public float getX() {

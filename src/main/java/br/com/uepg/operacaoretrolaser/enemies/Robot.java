@@ -5,6 +5,7 @@ import br.com.uepg.operacaoretrolaser.ui.GameMap;
 import br.com.uepg.operacaoretrolaser.player.Player;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.util.List;
 
 public abstract class Robot {
     protected float x, y;
@@ -17,6 +18,10 @@ public abstract class Robot {
     protected long attackCooldown;
     protected long lastAttackTime = 0;
 
+    // Variáveis de Interpolação de Movimento para evitar Flick
+    protected float currentVelX = 0;
+    protected float currentVelY = 0;
+
     public Robot(float x, float y, int size, int hp, boolean isSprinter, long attackCooldown) {
         this.x = x;
         this.y = y;
@@ -27,13 +32,13 @@ public abstract class Robot {
         this.attackCooldown = attackCooldown;
 
         if (isSprinter) {
-            this.speed = 5.2f + (float) (Math.random() * 0.5f);
+            this.speed = 5f;
         } else {
-            this.speed = 3.0f + (float) (Math.random() * 0.5f);
+            this.speed = 2.3f + (float) (Math.random() * 1.5f);
         }
     }
 
-    public void update(GameMap map, Player player, PlayerClone clone, boolean chanceExtra, FlowField flowField) {
+    public void update(GameMap map, Player player, PlayerClone clone, boolean chanceExtra, FlowField flowField, List<Robot> activeRobots) {
         if (isMorto()) return;
 
         float oldX = x;
@@ -47,18 +52,16 @@ public abstract class Robot {
             float angleAway = (float) Math.atan2(myCenterY - pCenterY, myCenterX - pCenterX);
 
             moverComDeslizamento((float) Math.cos(angleAway) * speed, (float) Math.sin(angleAway) * speed, map);
-            this.angle = angleAway; // Olha para onde está correndo
+            this.angle = angleAway;
 
         } else if (clone != null && clone.isAlive()) {
             float cCenterX = clone.getX() + 16;
             float cCenterY = clone.getY() + 16;
 
-            // Só corre para o clone se não houver paredes no caminho
             if (temVisaoPonto(cCenterX, cCenterY, map)) {
                 float angleToClone = (float) Math.atan2(cCenterY - myCenterY, cCenterX - myCenterX);
                 boolean isRangedAndClose = this instanceof RangedRobot && Math.hypot(cCenterX - myCenterX, cCenterY - myCenterY) < 350;
 
-                // Se não for um Ranged perto do clone, ele pode continuar andando
                 if (!isRangedAndClose) {
                     moverComDeslizamento((float) Math.cos(angleToClone) * speed, (float) Math.sin(angleToClone) * speed, map);
                 }
@@ -66,72 +69,111 @@ public abstract class Robot {
                 this.angle = angleToClone;
                 tentarAtacarClone(clone, map);
             } else {
-                // Se o clone estiver atrás da parede, o robô navega pelo mapa normalmente para não travar
-                calcularMovimento(map, player, flowField);
+                calcularMovimento(map, player, flowField, activeRobots);
             }
         } else {
-            calcularMovimento(map, player, flowField);
+            calcularMovimento(map, player, flowField, activeRobots);
             float targetCenterX = player.getX() + player.getWidth() / 2f;
             float targetCenterY = player.getY() + player.getHeight() / 2f;
             this.angle = Math.atan2(targetCenterY - myCenterY, targetCenterX - myCenterX);
             tentarAtacar(player, map);
         }
 
-        // Atualiza a animação de caminhada se ele saiu do lugar
         if (x != oldX || y != oldY) walkAnim += speed * 0.15f;
     }
 
-    protected void calcularMovimento(GameMap map, Player player, FlowField flowField) {
+    protected void calcularMovimento(GameMap map, Player player, FlowField flowField, List<Robot> activeRobots) {
+        float desiredX = 0;
+        float desiredY = 0;
+
+        float myCenterX = x + width / 2f;
+        float myCenterY = y + height / 2f;
+        float targetCenterX = player.getX() + player.getWidth() / 2f;
+        float targetCenterY = player.getY() + player.getHeight() / 2f;
+
         if (temVisao(player, map)) {
-            float targetCenterX = player.getX() + player.getWidth() / 2f;
-            float targetCenterY = player.getY() + player.getHeight() / 2f;
-            float myCenterX = x + width / 2f;
-            float myCenterY = y + height / 2f;
+            float dx = targetCenterX - myCenterX;
+            float dy = targetCenterY - myCenterY;
+            float dist = (float) Math.hypot(dx, dy);
+            if (dist > 0.01f) {
+                desiredX = dx / dist;
+                desiredY = dy / dist;
+            }
+        } else {
+            int tileSize = GameMap.TILE_SIZE;
+            int myCol = (int) myCenterX / tileSize;
+            int myRow = (int) myCenterY / tileSize;
 
-            float angleToPlayer = (float) Math.atan2(targetCenterY - myCenterY, targetCenterX - myCenterX);
-            float moveX = (float) Math.cos(angleToPlayer) * speed;
-            float moveY = (float) Math.sin(angleToPlayer) * speed;
+            Point vetorFluxo = flowField.getVector(myCol, myRow);
+            if (vetorFluxo.x != 0 || vetorFluxo.y != 0) {
+                // SOLUÇÃO: Mira no centro do próximo tile, puxando o robô para o meio do caminho
+                float targetTileX = (myCol + vetorFluxo.x) * tileSize + (tileSize / 2f);
+                float targetTileY = (myRow + vetorFluxo.y) * tileSize + (tileSize / 2f);
 
-            moverComDeslizamento(moveX, moveY, map);
-            return;
+                float dirX = targetTileX - myCenterX;
+                float dirY = targetTileY - myCenterY;
+                float magDir = (float) Math.hypot(dirX, dirY);
+
+                if (magDir > 0.1f) {
+                    desiredX = dirX / magDir;
+                    desiredY = dirY / magDir;
+                }
+            }
         }
 
-        int tileSize = 32;
-        int myCol = (int) (this.x + width / 2f) / tileSize;
-        int myRow = (int) (this.y + height / 2f) / tileSize;
+        // Separação Boids Suave
+        float sepX = 0;
+        float sepY = 0;
 
-        Point vetorFluxo = flowField.getVector(myCol, myRow);
+        for (Robot outro : activeRobots) {
+            if (outro != this && !outro.isMorto()) {
+                float dx = myCenterX - (outro.getX() + outro.getWidth() / 2f);
+                float dy = myCenterY - (outro.getY() + outro.getHeight() / 2f);
+                float distSq = dx * dx + dy * dy;
+                float distMin = (this.width + outro.getWidth()) / 2f + 4f;
+                float distMinSq = distMin * distMin;
 
-        if (vetorFluxo.x != 0 || vetorFluxo.y != 0) {
-            float targetX = (myCol + vetorFluxo.x) * tileSize + (tileSize - width) / 2f;
-            float targetY = (myRow + vetorFluxo.y) * tileSize + (tileSize - height) / 2f;
-            float angleToTarget = (float) Math.atan2(targetY - y, targetX - x);
-
-            float moveX = (float) Math.cos(angleToTarget) * speed;
-            float moveY = (float) Math.sin(angleToTarget) * speed;
-
-            moverComDeslizamento(moveX, moveY, map);
+                if (distSq > 0.1f && distSq < distMinSq) {
+                    float dist = (float) Math.sqrt(distSq);
+                    // O peso diminui quanto mais longe estão (Linear Falloff)
+                    float force = 1.0f - (dist / distMin);
+                    sepX += (dx / dist) * force;
+                    sepY += (dy / dist) * force;
+                }
+            }
         }
+
+        float moveX = desiredX + sepX * 1.8f;
+        float moveY = desiredY + sepY * 1.8f;
+
+        float mag = (float) Math.hypot(moveX, moveY);
+        if (mag > 0.01f) {
+            moveX = (moveX / mag) * speed;
+            moveY = (moveY / mag) * speed;
+        }
+
+        // LERP: Aplica a força na velocidade atual de forma elástica ao invés de instantânea
+        currentVelX += (moveX - currentVelX) * 0.2f;
+        currentVelY += (moveY - currentVelY) * 0.2f;
+
+        moverComDeslizamento(currentVelX, currentVelY, map);
     }
 
-    protected void moverComDeslizamento(float moveX, float moveY, GameMap map) {
-        boolean movedX = false;
-        boolean movedY = false;
+    protected void moverComDeslizamento(float velX, float velY, GameMap map) {
+        // Reduz a hitbox de movimento para perdoar esbarrões leves em quinas
+        int hitW = width - 8;
+        int hitH = height - 8;
+        float offX = (width - hitW) / 2f;
+        float offY = (height - hitH) / 2f;
 
-        if (moveX != 0 && map.isFree(x + moveX, y, width, height)) {
-            x += moveX;
-            movedX = true;
+        // Tenta mover no X de forma independente
+        if (velX != 0 && map.isFree(x + velX + offX, y + offY, hitW, hitH)) {
+            x += velX;
         }
-        if (moveY != 0 && map.isFree(x, y + moveY, width, height)) {
-            y += moveY;
-            movedY = true;
-        }
-        if (!movedX && movedY) {
-            float extraY = Math.signum(moveY) * (speed - Math.abs(moveY));
-            if (map.isFree(x, y + extraY, width, height)) y += extraY;
-        } else if (movedX && !movedY) {
-            float extraX = Math.signum(moveX) * (speed - Math.abs(moveX));
-            if (map.isFree(x + extraX, y, width, height)) x += extraX;
+
+        // Tenta mover no Y de forma independente (o verdadeiro deslizamento ocorre aqui)
+        if (velY != 0 && map.isFree(x + offX, y + velY + offY, hitW, hitH)) {
+            y += velY;
         }
     }
 
@@ -186,7 +228,7 @@ public abstract class Robot {
             float checkX = x1 + (targetX - x1) * (float) i / steps;
             float checkY = y1 + (targetY - y1) * (float) i / steps;
             if (!map.isFree(checkX - width / 2f, checkY - height / 2f, width, height)) {
-                return false; // Bateu numa parede
+                return false;
             }
         }
         return true;
